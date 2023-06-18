@@ -1,0 +1,104 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+    <div class="container-fluid mt-5 mb-5 px-4">
+        <h1 class="page-title">EMPLOYEES</h1>
+    </div>
+
+    <table id="ordosaldo-table" class="table table-bordered table-striped table-hover">
+        <thead>
+            <tr>
+                <th scope="col">First Name</th>
+                <th scope="col">Last Name</th>
+                <th scope="col">DOB</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for i in emp %}
+                <tr>
+                    <td  class="px-6 py-4 test">{{i.first_name}}</td>
+                    <td class="px-6 py-4"><input name="l_name" type="text" value={{i.last_name}}></td>
+                    <td class="px-6 py-4"><input name="dob" type="date" value={{i.birthdate}} class="dateField"></td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <form hx-post="{{ request.path }}" method="post" class="d-none">
+        {% csrf_token %}
+        {{ form }}
+        <input type="submit" value="Submit">
+    </form>
+{% endblock %}
+
+{%block scripts%}
+    <script>
+        $(document).ready(function () {
+            /* https://datatables.net/examples/plug-ins/dom_sort.html */
+            $.fn.dataTable.ext.order['dom-text'] = function (settings, col) {
+                return this.api()
+                .column(col, { order: 'index' })
+                .nodes()
+                .map(function (td, i) {
+                    return $('input', td).val();
+                });
+            };
+
+            t = $('#ordosaldo-table').DataTable({
+                columns: [
+                    null,
+                    { orderDataType: 'dom-text', type: 'string' },
+                    { orderDataType: 'dom-text', type: 'string' },
+                ],
+
+                language: {
+                    searchBuilder: {
+                        button: 'Filter',
+                    }
+                },
+
+                buttons: [
+                    {
+                        extend: 'searchBuilder',
+                        config: {
+                            depthLimit: 20
+                        }
+                    },
+                ],
+                dom: 'Bfrtip',
+            } );
+
+            var data  = {};
+            $('#ordosaldo-table td').on('change', function(e){
+                var $row = $(this).closest("tr");
+
+                $.each($row, function(i, el) {
+                    var fn = $(this).find('.test').html();
+                    data["fn"] = fn;
+
+                    var ln = $(this).find('input[name=l_name]').val();
+                    data["ln"] = ln;
+
+                    var dob = $(this).find('input[name=dob]').val();
+                    data["dob"] = dob;
+                });
+                data["csrfmiddlewaretoken"] = $('input[name=csrfmiddlewaretoken]').val();
+
+                console.log("This is txt: ", data);
+
+                $.ajax({
+                    method:'POST',
+                    url:'{% url "view" %}',
+                    data:data,
+                    success: function(json) {
+                        alert('Data Successfully Posted');
+                    },
+                    error: function() {
+                        alert('Data ERROR');
+                    },
+                });
+            });
+        });
+  </script>
+{%endblock scripts%}
